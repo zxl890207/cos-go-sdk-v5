@@ -9,7 +9,7 @@ import (
 var client *Client
 
 func setUp() {
-	client = New(&Option{
+	client = New(Conf{
 		AppID:     "",
 		SecretID:  "",
 		SecretKey: "",

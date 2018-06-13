@@ -11,20 +11,28 @@ type Client struct {
 	conn *Conn
 }
 
+type Conf struct {
+	AppID      string
+	SecretID   string
+	SecretKey  string
+	Region     string
+	PartSize   int64
+	RetryTimes int
+	UA         string
+	Domain     string
+	Bucket     string
+}
+const (
+	defaultRetryTimes = 3
+	defaultUA         = "cos-go-sdk-v5.2.9"
+)
 // New cos包的入口
-func New(o *Option) *Client {
+func New(conf Conf) *Client {
 	client := Client{}
-	conf := getDefaultConf()
-	conf.AppID = o.AppID
-	conf.SecretID = o.SecretID
-	conf.SecretKey = o.SecretKey
-	conf.Region = o.Region
-	
-	if o.Domain != "" {
-	    conf.Domain = o.Domain
+	if conf.UA == "" {
+		conf.UA = defaultUA
 	}
-	
-	conn := Conn{&http.Client{}, conf}
+	conn := Conn{&http.Client{}, &conf}
 	client.conn = &conn
 
 	return &client
@@ -39,6 +47,9 @@ func GetTimeoutCtx(timeout time.Duration) context.Context {
 
 // Bucket get bucket
 func (c *Client) Bucket(name string) *Bucket {
+	if name == "" {
+		name = c.conn.conf.Bucket
+	}
 	return &Bucket{name, c.conn}
 }
 
