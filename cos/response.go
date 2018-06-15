@@ -57,6 +57,16 @@ type AccessControlPolicy struct {
 	}
 }
 
+type ObjectProperties  struct {
+	Key          string
+	LastModified string
+	ETag         string
+	Size         int64
+	Owner        struct {
+	ID string
+	}
+	StorageClass string
+}
 // ListBucketResult list bucket contents result
 type ListBucketResult struct {
 	Name         string
@@ -66,16 +76,7 @@ type ListBucketResult struct {
 	MaxKeys      int
 	IsTruncated  bool
 	NextMarker   string
-	Contents     []struct {
-		Key          string
-		LastModified string
-		ETag         string
-		Size         int64
-		Owner        struct {
-			ID string
-		}
-		StorageClass string
-	}
+	Contents     []ObjectProperties
 	CommonPrefixes []struct {
 		Prefix string
 	}

@@ -139,7 +139,24 @@ func (c *Client) BucketExists(ctx context.Context, name string) error {
 
 	return err
 }
+/**
+共有读权限下 获取文件夹下文件列表
+**/
+func (c *Client) ListObjects(ctx context.Context, name string, qc *QueryCondition) (*ListBucketResult, error) {
+	resp, err := c.conn.PublicReadDoGet(ctx, "GET",name, "",qc.GenParams())
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
 
+	lbr := &ListBucketResult{}
+	err = XMLDecode(resp.Body, lbr)
+	if err != nil {
+		return nil, err
+	}
+
+	return lbr, nil
+}
 // ListBucketContents list
 func (c *Client) ListBucketContents(ctx context.Context, name string, qc *QueryCondition) (*ListBucketResult, error) {
 	resp, err := c.conn.Do(ctx, "GET", name, "", qc.GenParams(), nil, nil)

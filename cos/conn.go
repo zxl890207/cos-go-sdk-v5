@@ -17,7 +17,20 @@ type Conn struct {
 	c    *http.Client
 	conf *Conf
 }
-
+func (conn *Conn) PublicReadDoGet(ctx context.Context, method, bucket, object string, params map[string]interface{}) (*http.Response, error){
+	queryStr := getQueryStr(params)
+	url := conn.buildURL(bucket, object, queryStr)
+	req, err := http.NewRequest(method, url, nil)
+	res, err := conn.c.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		defer res.Body.Close()
+		return checkHTTPErr(res)
+	}
+	return res, nil
+}
 // Do 所有请求的入口
 func (conn *Conn) Do(ctx context.Context, method, bucket, object string, params map[string]interface{}, headers map[string]string, body io.Reader) (*http.Response, error) {
 	queryStr := getQueryStr(params)
