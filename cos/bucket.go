@@ -6,6 +6,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/xml"
+	"net/http"
 	"fmt"
 	"io"
 	"os"
@@ -312,8 +313,10 @@ func (b *Bucket) AbortUpload(ctx context.Context, obj, uploadID string) error {
 }
 
 // ObjectExists object exists
-func (b *Bucket) ObjectExists(ctx context.Context, obj string) error {
-	_, err := b.conn.Do(ctx, "HEAD", b.Name, obj, nil, nil, nil)
-
-	return err
+func (b *Bucket) ObjectExists(ctx context.Context, obj string) (exist bool,err error) {
+	res, err := b.conn.Do(ctx, "HEAD", b.Name, obj, nil, nil, nil)
+	if res.StatusCode == http.StatusOK {
+		return true,err
+	}
+	return false,err
 }
