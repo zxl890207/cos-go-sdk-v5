@@ -47,7 +47,9 @@ func (b *Bucket) HeadObject(ctx context.Context, object string) error {
 
 // UploadObject 上传文件
 func (b *Bucket) UploadObject(ctx context.Context, object string, content io.Reader, acl *AccessControl) error {
-	res, err := b.conn.Do(ctx, "PUT", b.Name, object, nil, acl.GenHead(), content)
+	header := acl.GenHead()
+	header["Content-Type"] = TypeByExtension(object)
+	res, err := b.conn.Do(ctx, "PUT", b.Name, object, nil, header, content)
 	if err == nil {
 		defer res.Body.Close()
 	}
@@ -97,6 +99,10 @@ func (b *Bucket) UploadObjectBySlice(ctx context.Context, dst, src string, taskN
 	if taskNum < 1 {
 		return ParamError{"taskNum 必须大于1"}
 	}
+	if headers == nil {
+		headers = make(map[string]string)
+	}
+	headers["Content-Type"] = TypeByExtension(dst)
 
 	uploadID, err := b.InitSliceUpload(ctx, dst, headers)
 	if err != nil {
@@ -318,5 +324,12 @@ func (b *Bucket) ObjectExists(ctx context.Context, obj string) (exist bool,err e
 	if res.StatusCode == http.StatusOK {
 		return true,err
 	}
+	if res.StatusCode == http.StatusNotFound {
+		return false,nil
+	}
 	return false,err
+}
+
+func (b *Bucket) Authorization(url string, method string,params map[string]interface{},header map[string]string) (string,error) {
+	return b.conn.Authorization(url,method,params,header)
 }

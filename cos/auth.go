@@ -10,17 +10,38 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"net/url"
 )
 
-func (conn *Conn) signHeader(req *http.Request, params map[string]interface{}, headers map[string]string) {
+func (conn *Conn) signHeader(req *http.Request, params map[string]interface{}, headers map[string]string) (string) {
 	signTime := getSignTime()
 	signature := conn.getSignature(req, params, headers, signTime)
 	authStr := fmt.Sprintf("q-sign-algorithm=sha1&q-ak=%s&q-sign-time=%s&q-key-time=%s&q-header-list=%s&q-url-param-list=%s&q-signature=%s",
 		conn.conf.SecretID, signTime, signTime, getHeadKeys(headers), getParamKeys(params), signature)
 
 	req.Header.Set("Authorization", authStr)
+	return authStr
 }
 
+func (conn *Conn) Authorization(urlRequest string,method string,params map[string]interface{},headers map[string]string) (string, error) {
+	queryStr := getQueryStr(params)
+	urlRequest += queryStr
+	request,err := url.Parse(urlRequest)
+	if err != nil {
+		return "",err
+	}
+	signTime := getSignTime()
+
+	httpString := fmt.Sprintf("%s\n%s\n%s\n%s\n", strings.ToLower(method),
+		request.Path, getParamStr(params), getHeadStr(headers))
+	httpString = sha(httpString)
+	signKey := hmacSha(conn.conf.SecretKey, signTime)
+	signStr := fmt.Sprintf("sha1\n%s\n%s\n", signTime, httpString)
+	signature := hmacSha(signKey, signStr)
+	authStr := fmt.Sprintf("q-sign-algorithm=sha1&q-ak=%s&q-sign-time=%s&q-key-time=%s&q-header-list=%s&q-url-param-list=%s&q-signature=%s",
+		conn.conf.SecretID, signTime, signTime, getHeadKeys(headers), getParamKeys(params), signature)
+	return authStr,nil
+}
 func getSignTime() string {
 	now := time.Now()
 	expired := now.Add(time.Second * 1800)
