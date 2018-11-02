@@ -6,11 +6,12 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/xml"
-	"net/http"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 // Bucket bucket
@@ -49,6 +50,7 @@ func (b *Bucket) HeadObject(ctx context.Context, object string) error {
 func (b *Bucket) UploadObject(ctx context.Context, object string, content io.Reader, acl *AccessControl) error {
 	header := acl.GenHead()
 	header["Content-Type"] = TypeByExtension(object)
+	//header["Content-Disposition"] = ""
 	res, err := b.conn.Do(ctx, "PUT", b.Name, object, nil, header, content)
 	if err == nil {
 		defer res.Body.Close()
@@ -103,6 +105,7 @@ func (b *Bucket) UploadObjectBySlice(ctx context.Context, dst, src string, taskN
 		headers = make(map[string]string)
 	}
 	headers["Content-Type"] = TypeByExtension(dst)
+	//headers["Content-Disposition"] = ""
 
 	uploadID, err := b.InitSliceUpload(ctx, dst, headers)
 	if err != nil {
@@ -319,17 +322,20 @@ func (b *Bucket) AbortUpload(ctx context.Context, obj, uploadID string) error {
 }
 
 // ObjectExists object exists
-func (b *Bucket) ObjectExists(ctx context.Context, obj string) (exist bool,err error) {
+func (b *Bucket) ObjectExists(ctx context.Context, obj string) (exist bool, err error) {
 	res, err := b.conn.Do(ctx, "HEAD", b.Name, obj, nil, nil, nil)
-	if res.StatusCode == http.StatusOK {
-		return true,err
+	if err == nil {
+		return true, nil
+	}
+	if res == nil {
+		return false, err
 	}
 	if res.StatusCode == http.StatusNotFound {
-		return false,nil
+		return false, nil
 	}
-	return false,err
+	return false, err
 }
 
-func (b *Bucket) Authorization(url string, method string,params map[string]interface{},header map[string]string) (string,error) {
-	return b.conn.Authorization(url,method,params,header)
+func (b *Bucket) Authorization(url string, method string, params map[string]interface{}, header map[string]string, interval time.Duration) (string, error) {
+	return b.conn.Authorization(url, method, params, header, interval)
 }

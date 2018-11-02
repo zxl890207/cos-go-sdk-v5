@@ -55,7 +55,7 @@ func (c *Client) Bucket(name string) *Bucket {
 
 // GetBucketList 获取bucketlist
 func (c *Client) GetBucketList(ctx context.Context) (*ListAllMyBucketsResult, error) {
-	req, err := http.NewRequest("GET", "http://service.cos.myqcloud.com/", nil)
+	req, err := http.NewRequest("GET", "https://service.cos.myqcloud.com/", nil)
 	if err != nil {
 		return nil, err
 	}

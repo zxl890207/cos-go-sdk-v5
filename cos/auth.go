@@ -6,15 +6,15 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/http"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
-	"net/url"
 )
 
-func (conn *Conn) signHeader(req *http.Request, params map[string]interface{}, headers map[string]string) (string) {
-	signTime := getSignTime()
+func (conn *Conn) signHeader(req *http.Request, params map[string]interface{}, headers map[string]string) string {
+	signTime := getSignTime(time.Second * 180)
 	signature := conn.getSignature(req, params, headers, signTime)
 	authStr := fmt.Sprintf("q-sign-algorithm=sha1&q-ak=%s&q-sign-time=%s&q-key-time=%s&q-header-list=%s&q-url-param-list=%s&q-signature=%s",
 		conn.conf.SecretID, signTime, signTime, getHeadKeys(headers), getParamKeys(params), signature)
@@ -23,14 +23,14 @@ func (conn *Conn) signHeader(req *http.Request, params map[string]interface{}, h
 	return authStr
 }
 
-func (conn *Conn) Authorization(urlRequest string,method string,params map[string]interface{},headers map[string]string) (string, error) {
+func (conn *Conn) Authorization(urlRequest string, method string, params map[string]interface{}, headers map[string]string, interval time.Duration) (string, error) {
 	queryStr := getQueryStr(params)
 	urlRequest += queryStr
-	request,err := url.Parse(urlRequest)
+	request, err := url.Parse(urlRequest)
 	if err != nil {
-		return "",err
+		return "", err
 	}
-	signTime := getSignTime()
+	signTime := getSignTime(interval)
 
 	httpString := fmt.Sprintf("%s\n%s\n%s\n%s\n", strings.ToLower(method),
 		request.Path, getParamStr(params), getHeadStr(headers))
@@ -40,11 +40,11 @@ func (conn *Conn) Authorization(urlRequest string,method string,params map[strin
 	signature := hmacSha(signKey, signStr)
 	authStr := fmt.Sprintf("q-sign-algorithm=sha1&q-ak=%s&q-sign-time=%s&q-key-time=%s&q-header-list=%s&q-url-param-list=%s&q-signature=%s",
 		conn.conf.SecretID, signTime, signTime, getHeadKeys(headers), getParamKeys(params), signature)
-	return authStr,nil
+	return authStr, nil
 }
-func getSignTime() string {
+func getSignTime(interval time.Duration) string {
 	now := time.Now()
-	expired := now.Add(time.Second * 1800)
+	expired := now.Add(interval)
 	return fmt.Sprintf("%d;%d", now.Unix(), expired.Unix())
 }
 

@@ -17,7 +17,8 @@ type Conn struct {
 	c    *http.Client
 	conf *Conf
 }
-func (conn *Conn) PublicReadDoGet(ctx context.Context, method, bucket, object string, params map[string]interface{}) (*http.Response, error){
+
+func (conn *Conn) PublicReadDoGet(ctx context.Context, method, bucket, object string, params map[string]interface{}) (*http.Response, error) {
 	queryStr := getQueryStr(params)
 	url := conn.buildURL(bucket, object, queryStr)
 	req, err := http.NewRequest(method, url, nil)
@@ -31,6 +32,7 @@ func (conn *Conn) PublicReadDoGet(ctx context.Context, method, bucket, object st
 	}
 	return res, nil
 }
+
 // Do 所有请求的入口
 func (conn *Conn) Do(ctx context.Context, method, bucket, object string, params map[string]interface{}, headers map[string]string, body io.Reader) (*http.Response, error) {
 	queryStr := getQueryStr(params)
@@ -52,11 +54,10 @@ func (conn *Conn) Do(ctx context.Context, method, bucket, object string, params 
 	if err != nil {
 		return nil, err
 	}
-
+	//delete(headers, "Content-Disposition")
 	conn.signHeader(req, params, headers)
 	req.Header.Set("User-Agent", conn.conf.UA)
 	setHeader(req, headers)
-
 	res, err := conn.c.Do(req)
 
 	if err != nil {
@@ -95,7 +96,7 @@ func getQueryStr(params map[string]interface{}) string {
 
 func (conn *Conn) buildURL(bucket, object, queryStr string) string {
 	domain := fmt.Sprintf("%s-%s.cos.%s.%s", bucket, conn.conf.AppID, conn.conf.Region, conn.conf.Domain)
-	url := fmt.Sprintf("http://%s/%s%s", domain, escape(object), queryStr)
+	url := fmt.Sprintf("https://%s/%s%s", domain, escape(object), queryStr)
 
 	return url
 }
