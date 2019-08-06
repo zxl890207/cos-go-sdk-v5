@@ -47,9 +47,10 @@ func (b *Bucket) HeadObject(ctx context.Context, object string) error {
 }
 
 // UploadObject 上传文件
-func (b *Bucket) UploadObject(ctx context.Context, object string, content io.Reader, acl *AccessControl) error {
+func (b *Bucket) UploadObject(ctx context.Context, object string, content io.Reader, acl *AccessControl,md5Str string) error {
 	header := acl.GenHead()
 	header["Content-Type"] = TypeByExtension(object)
+	header["Content-MD5"] = md5Str
 	//header["Content-Disposition"] = ""
 	res, err := b.conn.Do(ctx, "PUT", b.Name, object, nil, header, content)
 	if err == nil {
